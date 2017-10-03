@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  *
  * @author cmarkhalberstadt
  */
-public class RoadsAndLibraries_Main_V1 {
+public class RoadsAndLibraries_V2 {
     
     
     public static void main(String[] args)
