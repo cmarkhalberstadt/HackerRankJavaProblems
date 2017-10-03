@@ -7,12 +7,14 @@ package hackerrankjavaproblems.graphtheory.roadsandlibraries;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -160,117 +162,57 @@ public class RoadsAndLibraries_V2 {
         // we are going to build the minimum number of libraries and the
         // maximum number of roads
         
-        // map of city number to a set of cities it will be connected to once
+        // array of city number to a set of cities it will be connected to once
         // the roads have been rebuilt
-        HashMap<Integer, HashSet<Integer>> cityConnections = 
-                new HashMap<>();
+        ArrayList<Set<Integer>> cityConnections = 
+                new ArrayList<>(numCities);
         
-        // 
-        HashSet<HashSet<Integer>> uniqueCityConnections = 
+        // Hash Set of hash sets to store the unique connected networks
+        // we have found
+        Set<Set<Integer>> uniqueCityConnections = 
                 new HashSet<>();
         
-        // a set of cities which still need to be visit / connected to a
-        // library
-        HashSet<Integer> citiesToVisit = new HashSet<>();
-        for (int i = 1; i <= numCities; i++) citiesToVisit.add(i);
+        // fill up the array list of hash sets with sets of cities only
+        // connected to themselves
+        for (int i = 0; i < numCities; i++)
+        {
+            // create the new set to add
+            Set setToAdd = new HashSet<Integer>();
+            // add the current city to the set to add
+            setToAdd.add(i+1);
+            // add the current set to the array list of city connections
+            cityConnections.add(i, setToAdd);
+            // add the current set to the set of unique city connection
+            // sets
+            uniqueCityConnections.add(setToAdd);
+        }
         
-        int j = 0;
-        
+        // iterate through all input pairs (denoting the roads)
         for (Pair p : connections)
         {
-            // remove both p.x and p.y from the set of cities which still need
-            // to be visited
-            citiesToVisit.remove(p.x);
-            citiesToVisit.remove(p.y);
+            // get the x set and y set
+            Set xSet = cityConnections.get(p.x-1);
+            Set ySet = cityConnections.get(p.y-1);
             
-            // check to see if either p.x or p.y already have associations in
-            // the map of city connections
-            if (cityConnections.containsKey(p.x) && 
-                    !cityConnections.containsKey(p.y))
+            // remove the xSet and ySet from the set of unique sets
+            uniqueCityConnections.remove(xSet);
+            uniqueCityConnections.remove(ySet);
+            
+            // declare the set to add into and set to add from variables
+            Set setToAddInto = null;
+            Set setToAddFrom = null;
+            
+            // check to see which set is larger - we want to always add into
+            // the larger set
+            if (xSet.size() > ySet.size())
             {
-                // there are connections for p.x, but not p.y
-                
-                // get the set associated with p.x
-                HashSet<Integer> set = cityConnections.get(p.x);
-                
-                // add p.y to the p.x set
-                set.add(p.y);
-                
-                // remove the previous associations with p.x and p.y in the map
-                cityConnections.remove(p.x);
-                cityConnections.remove(p.y);
-                
-                // associate this set in the map with the p.y key
-                cityConnections.put(p.x, set);
-                cityConnections.put(p.y, set);
+                setToAddInto = xSet;
+                setToAddFrom = ySet;
             }
-            else if (!cityConnections.containsKey(p.x) && 
-                    cityConnections.containsKey(p.y))
+            else
             {
-                // there are connections for p.y but not p.x
-                
-                // get the set associated with p.x
-                HashSet<Integer> xSet = cityConnections.get(p.y);
-                
-                uniqueCityConnections.remove(xSet);
-                
-                // add p.y to the p.x set
-                xSet.add(p.x);
-                
-                // remove the previous associations with p.x and p.y in the map
-                cityConnections.remove(p.x);
-                cityConnections.remove(p.y);
-                
-                
-                
-                // associate this set in the map with the p.x and p.y key
-                cityConnections.put(p.x, xSet);
-                cityConnections.put(p.y, xSet);
-                uniqueCityConnections.add(xSet);
-            }
-            else if (cityConnections.containsKey(p.x) && 
-                    cityConnections.containsKey(p.y))
-            {
-                // there are associations for both p.x and p.y in the map
-                
-                // get the p.x set
-                HashSet<Integer> xSet = cityConnections.get(p.x);
-                // get the p.y set
-                HashSet<Integer> ySet = cityConnections.get(p.y);
-                
-                // remove both p.x and p.y sets from the set of unique sets
-                uniqueCityConnections.remove(xSet);
-                uniqueCityConnections.remove(ySet);
-                
-                // add all members of the p.y set to the p.x set
-                xSet.addAll(ySet);
-                    
-                // remove the previous associations with p.x and p.y in the map
-                cityConnections.remove(p.x);
-                cityConnections.remove(p.y);
-                
-                // associate this set in the map with the p.x and p.y key
-                cityConnections.put(p.x, xSet);
-                cityConnections.put(p.y, xSet);
-                uniqueCityConnections.add(xSet);
-            }
-            else //(!cityConnections.containsKey(p.x) && 
-                    // !cityConnections.containsKey(p.y))
-            {
-                // the map contains associations for neither p.x nor p.y
-                
-                // create a new HashSet
-                HashSet<Integer> set = new HashSet<>();
-                // add p.x and p.y to the set
-                set.add(p.x);
-                set.add(p.y);
-                
-                // associate this new set with both p.x and p.y in the map
-                cityConnections.put(p.x, set);
-                cityConnections.put(p.y, set);
-                
-                // add the set to the set of unique city connect sets
-                uniqueCityConnections.add(set);
+                setToAddInto = ySet;
+                setToAddFrom = xSet;
             }
         } // end for (Pair p : connections)
         
@@ -279,56 +221,12 @@ public class RoadsAndLibraries_V2 {
         // to by rebuilding roads. Any unconnected city still left inthe
         // citiesToVisit set must have its own individual library built
         
-        HashSet<Integer> citiesCounted = new HashSet<>();
         
         // variable to hold the return value
         long returnValue = 0;
         
         // iterate through the set of unique sets
-        for (Map.Entry<Integer, HashSet<Integer>> entry : 
-                cityConnections.entrySet())
-        {
-            if (!entry.getValue().isEmpty())
-            {
-                boolean countThisSet = true;
-                
-                // iterate through this set and see if it contains any cities
-                // we have already counted - if so, do not count this set
-                for (Integer city : entry.getValue())
-                {
-                    if (citiesCounted.contains(city))
-                    {
-                        // this set contains cities we have already counted
-                        // --- do not count this set
-                        countThisSet = false;
-                        //break;
-                    }
-                    // add the current city to the set of cities we have
-                    // counted
-                    citiesCounted.add(city);
-                }
-                
-                if (countThisSet)
-                {
-                    // we should count this set
-                    
-                    // build a library for this collection of cities connected
-                    // by roads
-                    returnValue += costLibrary;
-
-                    // build the roads to connect these cities
-                    // NOTE: we need to build (numCitiesInSet) - 1 roads
-                    returnValue += (costRoad * (entry.getValue().size() - 1));
-                }
-                
-                // remove all of the values from this set
-                entry.getValue().clear();
-            }
-        }
         
-        // if there are still cities in the citiesToVisit set, we need to
-        // build libraries in those cities
-        returnValue += (costLibrary * citiesToVisit.size());
         
         // return the return value
         return returnValue;
