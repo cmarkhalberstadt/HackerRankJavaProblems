@@ -79,7 +79,7 @@ public class RoadsAndLibraries_V2 {
     
     public static void test_readFromFile(){
         try {
-            File file = new File("src/hackerrankjavaproblems/graphtheory/roadsandlibraries/input10.txt");
+            File file = new File("src/hackerrankjavaproblems/graphtheory/roadsandlibraries/input2.txt");
             Scanner in = new Scanner(file);
             int q = in.nextInt();
             for(int currentTestCase = 0; currentTestCase < q; currentTestCase++){
@@ -167,11 +167,6 @@ public class RoadsAndLibraries_V2 {
         ArrayList<Set<Integer>> cityConnections = 
                 new ArrayList<>(numCities);
         
-        // Hash Set of hash sets to store the unique connected networks
-        // we have found
-        Set<Set<Integer>> uniqueCityConnections = 
-                new HashSet<>();
-        
         // fill up the array list of hash sets with sets of cities only
         // connected to themselves
         for (int i = 0; i < numCities; i++)
@@ -182,9 +177,6 @@ public class RoadsAndLibraries_V2 {
             setToAdd.add(i+1);
             // add the current set to the array list of city connections
             cityConnections.add(i, setToAdd);
-            // add the current set to the set of unique city connection
-            // sets
-            uniqueCityConnections.add(setToAdd);
         }
         
         // iterate through all input pairs (denoting the roads)
@@ -194,25 +186,37 @@ public class RoadsAndLibraries_V2 {
             Set xSet = cityConnections.get(p.x-1);
             Set ySet = cityConnections.get(p.y-1);
             
-            // remove the xSet and ySet from the set of unique sets
-            uniqueCityConnections.remove(xSet);
-            uniqueCityConnections.remove(ySet);
-            
             // declare the set to add into and set to add from variables
-            Set setToAddInto = null;
-            Set setToAddFrom = null;
+            Set<Integer> setToAddInto = null;
+            Set<Integer> setToAddFrom = null;
+            int setToAddIntoIndex = -1;
             
             // check to see which set is larger - we want to always add into
             // the larger set
             if (xSet.size() > ySet.size())
             {
+                setToAddIntoIndex = p.x-1;
                 setToAddInto = xSet;
                 setToAddFrom = ySet;
             }
             else
             {
+                setToAddIntoIndex = p.y-1;
                 setToAddInto = ySet;
                 setToAddFrom = xSet;
+            }
+            
+            // add the setToAddFrom into the setToAddInto
+            setToAddInto.addAll(setToAddFrom);
+            
+            // add the setToAddInto back into the arraylist
+            cityConnections.set(setToAddIntoIndex, setToAddInto);
+            
+            // iterate through the set to add from and set all indeces in the
+            // city connections array to the setToAddInto
+            for (Integer i : setToAddFrom)
+            {
+                cityConnections.set(i-1, setToAddInto);
             }
         } // end for (Pair p : connections)
         
@@ -225,8 +229,21 @@ public class RoadsAndLibraries_V2 {
         // variable to hold the return value
         long returnValue = 0;
         
-        // iterate through the set of unique sets
-        
+        // iterate through the array list of sets
+        for (Set<Integer> thisSet : cityConnections)
+        {
+            if (!thisSet.isEmpty())
+            {
+                // for each of the sets in the unique city connections, we build
+                // 1 library and (size() - 1) roads
+                returnValue += costLibrary;
+
+                returnValue += (costRoad * (thisSet.size() - 1));
+                
+                // clear the current set
+                thisSet.clear();
+            }
+        }
         
         // return the return value
         return returnValue;
