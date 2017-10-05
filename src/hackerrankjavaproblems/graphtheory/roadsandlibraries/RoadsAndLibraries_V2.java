@@ -162,61 +162,69 @@ public class RoadsAndLibraries_V2 {
         // we are going to build the minimum number of libraries and the
         // maximum number of roads
         
-        // array of city number to a set of cities it will be connected to once
+        // map of city number to a set of cities it will be connected to once
         // the roads have been rebuilt
-        ArrayList<Set<Integer>> cityConnections = 
-                new ArrayList<>(numCities);
-        
-        // fill up the array list of hash sets with sets of cities only
-        // connected to themselves
-        for (int i = 0; i < numCities; i++)
-        {
-            // create the new set to add
-            Set setToAdd = new HashSet<Integer>();
-            // add the current city to the set to add
-            setToAdd.add(i+1);
-            // add the current set to the array list of city connections
-            cityConnections.add(i, setToAdd);
-        }
+        HashMap<Integer, Set<Integer>> cityConnections = 
+                new HashMap<>();
         
         // iterate through all input pairs (denoting the roads)
         for (Pair p : connections)
         {
             // get the x set and y set
-            Set xSet = cityConnections.get(p.x-1);
-            Set ySet = cityConnections.get(p.y-1);
+            Set<Integer> xSet = cityConnections.get(p.x);
+            Set<Integer> ySet = cityConnections.get(p.y);
+            
+            // check to see if the xSet already exists
+            if (xSet == null)
+            {
+                xSet = new HashSet<Integer>();
+                xSet.add(p.x);
+            }
+            
+            // check to see if the ySet already exists
+            if (ySet == null)
+            {
+                ySet = new HashSet<Integer>();
+                ySet.add(p.y);
+            }
             
             // declare the set to add into and set to add from variables
             Set<Integer> setToAddInto = null;
             Set<Integer> setToAddFrom = null;
             int setToAddIntoIndex = -1;
+            int setToAddFromIndex = -1;
             
             // check to see which set is larger - we want to always add into
             // the larger set
             if (xSet.size() > ySet.size())
             {
-                setToAddIntoIndex = p.x-1;
+                setToAddIntoIndex = p.x;
+                setToAddFromIndex = p.y;
                 setToAddInto = xSet;
                 setToAddFrom = ySet;
             }
             else
             {
-                setToAddIntoIndex = p.y-1;
+                setToAddIntoIndex = p.y;
+                setToAddFromIndex = p.x;
                 setToAddInto = ySet;
                 setToAddFrom = xSet;
             }
             
-            // add the setToAddFrom into the setToAddInto
-            setToAddInto.addAll(setToAddFrom);
-            
-            // add the setToAddInto back into the arraylist
-            cityConnections.set(setToAddIntoIndex, setToAddInto);
-            
-            // iterate through the set to add from and set all indeces in the
-            // city connections array to the setToAddInto
-            for (Integer i : setToAddFrom)
+            if (!setToAddInto.contains(setToAddFromIndex))
             {
-                cityConnections.set(i-1, setToAddInto);
+                // add the setToAddFrom into the setToAddInto
+                setToAddInto.addAll(setToAddFrom);
+
+                // add the setToAddInto back into the arraylist
+                cityConnections.put(setToAddIntoIndex, setToAddInto);
+
+                // iterate through the set to add from and set all indeces in the
+                // city connections array to the setToAddInto
+                for (Integer i : setToAddFrom)
+                {
+                    cityConnections.put(i, setToAddInto);
+                }
             }
         } // end for (Pair p : connections)
         
@@ -229,21 +237,29 @@ public class RoadsAndLibraries_V2 {
         // variable to hold the return value
         long returnValue = 0;
         
+        int numCitiesCounted = 0;
+        
         // iterate through the array list of sets
-        for (Set<Integer> thisSet : cityConnections)
+        for (Map.Entry<Integer, Set<Integer>> thisEntry: cityConnections.entrySet())
         {
-            if (!thisSet.isEmpty())
+            if (!thisEntry.getValue().isEmpty())
             {
                 // for each of the sets in the unique city connections, we build
                 // 1 library and (size() - 1) roads
                 returnValue += costLibrary;
 
-                returnValue += (costRoad * (thisSet.size() - 1));
+                returnValue += (costRoad * (thisEntry.getValue().size() - 1));
+                
+                // keep track of the number of cities we have counted
+                numCitiesCounted += thisEntry.getValue().size();
                 
                 // clear the current set
-                thisSet.clear();
+                thisEntry.getValue().clear();
             }
         }
+        
+        // we need to build libraries in all of the unconnected cities
+        returnValue += costLibrary * (numCities - numCitiesCounted);
         
         // return the return value
         return returnValue;
